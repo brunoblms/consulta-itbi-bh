@@ -1,0 +1,61 @@
+name: Atualizar base ITBI
+
+on:
+  schedule:
+    # toda segunda-feira às 06:00 UTC (~03:00 horário de Brasília)
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-itbi
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # dados_itbi.json/dados_meta.json na raiz não vão pro git (são grandes),
+      # mas precisam persistir entre execuções pra atualização continuar
+      # incremental (só buscar meses novos). O cache guarda esse estado.
+      - name: Restaurar estado incremental (cache)
+        uses: actions/cache@v4
+        with:
+          path: |
+            dados_itbi.json
+            dados_meta.json
+          key: itbi-dados-${{ github.run_id }}
+          restore-keys: |
+            itbi-dados-
+
+      # --incluir-historico-antigo é seguro rodar sempre: só rebusca o
+      # arquivo histórico se ele ainda não constar no estado restaurado do cache.
+      - name: Rodar atualização incremental
+        run: python3 etl_atualizar_dados.py --anos 5 --incluir-historico-antigo
+
+      - name: Gerar versão web comprimida (docs/)
+        run: |
+          gzip -9 -f -c dados_itbi.json > docs/dados_itbi.json.gz
+          cp dados_meta.json docs/dados_meta.json
+
+      - name: Commit e push se houver mudanças
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/dados_itbi.json.gz docs/dados_meta.json
+          if git diff --cached --quiet; then
+            echo "Sem mudanças na base, nada para publicar."
+          else
+            git commit -m "Atualização automática da base ITBI ($(date -u +%Y-%m-%d))"
+            git push
+          fi

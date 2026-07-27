@@ -64,12 +64,26 @@ O servidor de dados da PBH tem um limitador de requisições (retorna erro 409 s
 
 ## Publicar/atualizar a versão web (GitHub Pages)
 
-A pasta `docs/` é o que fica no ar em `https://<seu-usuario>.github.io/<repo>/`. Ela não é gerada automaticamente pelo `etl_atualizar_dados.py` — depois de atualizar a base localmente, regenere e suba a versão web à mão:
+A pasta `docs/` é o que fica no ar em `https://<seu-usuario>.github.io/<repo>/`.
+
+### Automático (recomendado)
+
+`.github/workflows/atualizar.yml` roda sozinho no GitHub Actions **toda segunda-feira**, sem depender de nada local:
+busca meses novos (incremental), regenera `docs/dados_itbi.json.gz` e `docs/dados_meta.json`, e só faz commit/push se algum dado realmente mudou. Gratuito para repositório público.
+
+Para forçar uma atualização na hora (sem esperar a segunda-feira): na aba **Actions** do repositório no GitHub, abra o workflow "Atualizar base ITBI" e clique em **Run workflow**.
+
+O estado incremental (`dados_itbi.json`/`dados_meta.json` da raiz) é mantido entre execuções via cache do Actions — por isso o workflow não rebusca tudo do zero a cada vez.
+
+### Manual (alternativa, feito localmente)
+
+Se preferir atualizar do seu próprio computador em vez de esperar/acionar o Actions:
 
 ```
-gzip -9 -k -c dados_itbi.json > docs/dados_itbi.json.gz
+python3 etl_atualizar_dados.py --anos 5 --incluir-historico-antigo
+gzip -9 -f -c dados_itbi.json > docs/dados_itbi.json.gz
 cp dados_meta.json docs/dados_meta.json
-git add docs/ dados_meta.json
+git add docs/dados_itbi.json.gz docs/dados_meta.json
 git commit -m "Atualiza dados da versão web"
 git push
 ```
