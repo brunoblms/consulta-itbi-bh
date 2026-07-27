@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta ITBI - Belo Horizonte</title>
+<style>
+  :root {
+    --azul: #1d4ed8;
+    --azul-escuro: #1e3a8a;
+    --cinza-bg: #f5f6f8;
+    --cinza-borda: #dcdfe4;
+    --texto: #1f2430;
+    --texto-sec: #5a6270;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    margin: 0;
+    background: var(--cinza-bg);
+    color: var(--texto);
+  }
+  header {
+    background: linear-gradient(135deg, var(--azul-escuro), var(--azul));
+    color: white;
+    padding: 28px 24px;
+  }
+  header h1 { margin: 0 0 6px 0; font-size: 22px; }
+  header p { margin: 0; opacity: 0.9; font-size: 14px; }
+  main { max-width: 920px; margin: -20px auto 40px auto; padding: 0 20px; }
+  .card {
+    background: white;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .cobertura {
+    font-size: 13px;
+    color: var(--texto-sec);
+    margin-bottom: 16px;
+  }
+  form {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .campo { display: flex; flex-direction: column; gap: 4px; }
+  .campo label { font-size: 13px; color: var(--texto-sec); }
+  .campo input {
+    padding: 9px 10px;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  #endereco { flex: 1; min-width: 240px; }
+  #quantidade { width: 90px; }
+  button {
+    background: var(--azul);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--azul-escuro); }
+  button:disabled { opacity: 0.6; cursor: default; }
+  button.secundario {
+    background: white;
+    color: var(--azul);
+    border: 1px solid var(--azul);
+  }
+  button.secundario:hover { background: #eef2ff; }
+  .barra-cobertura {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .acoes-cobertura {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .link-terminal {
+    font-size: 12.5px;
+    color: var(--texto-sec);
+    text-decoration: none;
+    border: 1px dashed var(--cinza-borda);
+    border-radius: 6px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+  .link-terminal:hover { color: var(--azul); border-color: var(--azul); }
+  .status-atualizacao {
+    font-size: 12.5px;
+    color: var(--texto-sec);
+    margin-top: 8px;
+  }
+  .status-atualizacao.erro { color: #b42318; }
+  .status-atualizacao.sucesso { color: #067647; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--cinza-borda); vertical-align: top; }
+  th { color: var(--texto-sec); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.02em; }
+  tr:hover td { background: #fafbfc; }
+  .valor { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .vazio { padding: 24px 4px; color: var(--texto-sec); font-size: 14px; }
+  .aviso {
+    font-size: 12.5px;
+    color: var(--texto-sec);
+    background: #fff8e6;
+    border: 1px solid #f0d896;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+  .resumo { font-size: 13px; color: var(--texto-sec); margin: 12px 2px 0 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Consulta ITBI - Belo Horizonte</h1>
+  <p>Últimas transações imobiliárias por endereço, com base nos dados abertos da PBH (ITBI Relatórios)</p>
+</header>
+<main>
+  <div class="card">
+    <div class="barra-cobertura">
+      <div class="cobertura" id="cobertura">Carregando base de dados...</div>
+      <div class="acoes-cobertura">
+        <a class="link-terminal" href="abrir_terminal_para_atualizar.command" download>Abrir terminal de atualização</a>
+        <button type="button" class="secundario" id="btn-atualizar">Atualizar base</button>
+      </div>
+    </div>
+    <div class="status-atualizacao" id="status-atualizacao"></div>
+    <form id="form-busca">
+      <div class="campo">
+        <label for="endereco">Endereço</label>
+        <input type="text" id="endereco" placeholder="ex: Rua Alcântara 43, Avenida Afonso Pena..." autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="quantidade">Quantidade</label>
+        <input type="number" id="quantidade" value="10" min="1" max="500">
+      </div>
+      <button type="submit">Buscar</button>
+    </form>
+    <div class="resumo" id="resumo"></div>
+  </div>
+
+  <div class="card">
+    <div id="resultado"><div class="vazio">Digite um endereço acima e clique em Buscar.</div></div>
+  </div>
+
+  <div class="aviso">
+    <strong>Sobre estes dados:</strong> os valores vêm de declarações feitas para fins de ITBI e podem não refletir
+    o valor de mercado real da transação. A "data" exibida é a data de quitação do imposto, que pode ser posterior
+    à data da negociação/escritura. A busca por endereço é aproximada, pois a base de dados não possui um
+    identificador único de imóvel — confira sempre o endereço completo retornado para confirmar se é o imóvel certo.
+    Fonte: <a href="https://ckan.pbh.gov.br/dataset/itbi-relatorios" target="_blank" rel="noopener">Portal de Dados Abertos da PBH</a>.
+  </div>
+</main>
+
+<script>
+let DADOS = __DADOS_JSON__;
+let META = __META_JSON__;
+const RODANDO_VIA_SERVIDOR = location.protocol === 'http:' || location.protocol === 'https:';
+
+function stripAccents(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function normalizar(s) {
+  let t = stripAccents(s).toUpperCase();
+  t = t.replace(/\s+/g, ' ').trim();
+  t = t.replace(/^AVE\b/, 'AVENIDA')
+       .replace(/^AV\b/, 'AVENIDA')
+       .replace(/^R\b/, 'RUA')
+       .replace(/^TRAV\b/, 'TRAVESSA')
+       .replace(/^AL\b/, 'ALAMEDA');
+  return t;
+}
+
+function formatarMoeda(v) {
+  if (v === null || v === undefined) return '-';
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatarArea(v) {
+  if (v === null || v === undefined) return '-';
+  return v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' m²';
+}
+
+function formatarAno(v) {
+  if (v === null || v === undefined || v === '') return '-';
+  return v;
+}
+
+function renderResumo() {
+  const el = document.getElementById('cobertura');
+  if (!META || !META.total_registros) {
+    el.textContent = 'Base de dados vazia.';
+    return;
+  }
+  el.textContent = `Base atual: ${META.total_registros.toLocaleString('pt-BR')} transações reais, ` +
+    `cobrindo de ${META.data_mais_antiga} a ${META.data_mais_recente}. ` +
+    `Rode etl_atualizar_dados.py para atualizar/expandir esta base.`;
+}
+
+function buscar(termo, quantidade) {
+  const termoNorm = normalizar(termo);
+  const tokens = termoNorm.split(' ').filter(Boolean);
+  if (tokens.length === 0) return [];
+  const resultados = [];
+  for (const r of DADOS) {
+    let ok = true;
+    for (const tok of tokens) {
+      if (r.endereco_normalizado.indexOf(tok) === -1) { ok = false; break; }
+    }
+    if (ok) resultados.push(r);
+    if (resultados.length >= quantidade * 20) break; // limite de segurança, dados já vêm ordenados por data desc
+  }
+  return resultados.slice(0, quantidade);
+}
+
+function renderResultado(lista, termo) {
+  const container = document.getElementById('resultado');
+  const resumo = document.getElementById('resumo');
+  if (!termo) {
+    container.innerHTML = '<div class="vazio">Digite um endereço acima e clique em Buscar.</div>';
+    resumo.textContent = '';
+    return;
+  }
+  if (lista.length === 0) {
+    container.innerHTML = '<div class="vazio">Nenhuma transação encontrada para este endereço na base atual.</div>';
+    resumo.textContent = '';
+    return;
+  }
+  resumo.textContent = `${lista.length} transação(ões) encontrada(s), da mais recente para a mais antiga.`;
+  let html = '<table><thead><tr>' +
+    '<th>Endereço completo</th><th>Data</th><th>Valor declarado</th><th>Valor base de cálculo</th>' +
+    '<th>Ano de construção</th><th>Área construída</th>' +
+    '</tr></thead><tbody>';
+  for (const r of lista) {
+    html += `<tr><td>${r.endereco}</td><td>${r.data_exibicao}</td>` +
+      `<td class="valor">${formatarMoeda(r.valor_declarado)}</td><td class="valor">${formatarMoeda(r.valor_base_calculo)}</td>` +
+      `<td class="valor">${formatarAno(r.ano_construcao)}</td><td class="valor">${formatarArea(r.area_construida)}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+document.getElementById('form-busca').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const termo = document.getElementById('endereco').value.trim();
+  const quantidade = Math.max(1, parseInt(document.getElementById('quantidade').value, 10) || 10);
+  const lista = buscar(termo, quantidade);
+  renderResultado(lista, termo);
+});
+
+async function carregarDadosFrescos() {
+  // so tenta buscar os arquivos json quando a pagina esta sendo servida via
+  // http(s) (ex: por servidor_local.py) -- abrindo o index.html direto (file://)
+  // isso nao funciona de forma confiavel em todos os navegadores, entao nesse
+  // caso a pagina fica só com os dados que já vieram embutidos no arquivo.
+  if (!RODANDO_VIA_SERVIDOR) return false;
+  try {
+    const [respDados, respMeta] = await Promise.all([
+      fetch('dados_itbi.json', { cache: 'no-store' }),
+      fetch('dados_meta.json', { cache: 'no-store' }),
+    ]);
+    if (!respDados.ok || !respMeta.ok) return false;
+    DADOS = await respDados.json();
+    META = await respMeta.json();
+    renderResumo();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function setStatus(msg, classe) {
+  const el = document.getElementById('status-atualizacao');
+  el.textContent = msg;
+  el.className = 'status-atualizacao' + (classe ? ' ' + classe : '');
+}
+
+document.getElementById('btn-atualizar').addEventListener('click', async function() {
+  const btn = this;
+  if (!RODANDO_VIA_SERVIDOR) {
+    setStatus('Esse botão só funciona com o servidor local rodando. Clique em "Abrir terminal de atualização" ' +
+      'ao lado (baixa um atalho que já abre o Terminal na pasta certa) e rode "python3 servidor_local.py", ' +
+      'depois acesse http://localhost:8877/index.html.', 'erro');
+    return;
+  }
+  btn.disabled = true;
+  setStatus('Atualizando... isso busca só os meses novos que ainda não estão na base, pode levar alguns segundos.');
+  try {
+    const resp = await fetch('atualizar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anos: 5 }),
+    });
+    const dados = await resp.json();
+    if (!dados.ok) {
+      setStatus('Falha ao atualizar: ' + (dados.erro || 'erro desconhecido') + '.', 'erro');
+      return;
+    }
+    await carregarDadosFrescos();
+    const novos = Object.keys(dados.resumo.meses_novos || {});
+    const erros = Object.keys(dados.resumo.meses_com_erro || {});
+    let msg = novos.length
+      ? `Atualizado! ${novos.length} mês(es) novo(s): ${novos.join(', ')}. Total agora: ${dados.resumo.total_registros.toLocaleString('pt-BR')} registros.`
+      : 'Atualizado! Nenhum mês novo encontrado além do que já tínhamos.';
+    if (erros.length) msg += ` (atenção: falha ao buscar ${erros.join(', ')})`;
+    setStatus(msg, erros.length ? 'erro' : 'sucesso');
+  } catch (e) {
+    setStatus('Não consegui falar com o servidor local. Confirme que "python3 servidor_local.py" está rodando ' +
+      'e que você abriu a página pelo link http://localhost:8877/index.html (não por duplo clique no arquivo).', 'erro');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+renderResumo();
+carregarDadosFrescos();
+</script>
+</body>
+</html>
