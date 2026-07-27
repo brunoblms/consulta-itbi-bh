@@ -259,6 +259,20 @@ def carregar_estado_existente():
                 meses_ok[mes] = valor
     except (FileNotFoundError, json.JSONDecodeError):
         pass
+
+    # protecao: um mes so conta como "ja baixado" se realmente existem registros
+    # dele em dados_itbi.json (ou, no caso do historico, registros no intervalo
+    # que ele cobre). Sem isso, um dados_meta.json dessincronizado do
+    # dados_itbi.json (ex: só o meta foi versionado/cacheado, sem os dados)
+    # faria o script achar que tudo já foi buscado e gerar uma base vazia.
+    meses_presentes = set(r['data'][:7] for r in registros_existentes)
+    historico_presente = any('2008-01' <= m <= '2024-05' for m in meses_presentes)
+    meses_ok = {
+        mes: qtd for mes, qtd in meses_ok.items()
+        if mes in meses_presentes
+        or (mes == '2008-01_a_2024-05_consolidado' and historico_presente)
+        or qtd == 0  # mes real sem nenhum registro no periodo e, por isso, legitimamente ausente
+    }
     return registros_existentes, meses_ok
 
 

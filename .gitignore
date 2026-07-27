@@ -1,6 +1,11 @@
 # Dados completos e index.html embutido (grandes demais para git, usados só localmente).
 # A versão para a web fica em docs/ (dados_itbi.json.gz, bem menor).
+# dados_meta.json da raiz também fica de fora: versionar só ele sem o
+# dados_itbi.json correspondente faz o ETL confiar que os meses já estão
+# prontos sem ter os registros de verdade (foi o que quebrou o primeiro
+# run do GitHub Actions, publicando uma base com 0 registros).
 /dados_itbi.json
+/dados_meta.json
 /index.html
 
 # Config local do Claude Code, não faz parte do app.

@@ -28,15 +28,18 @@ jobs:
       # dados_itbi.json/dados_meta.json na raiz não vão pro git (são grandes),
       # mas precisam persistir entre execuções pra atualização continuar
       # incremental (só buscar meses novos). O cache guarda esse estado.
+      # Prefixo "v2": o "v1" (run #1) ficou com uma base vazia cacheada por um
+      # bug já corrigido (dados_meta.json versionado sem o dados_itbi.json
+      # correspondente); mudar o prefixo evita restaurar esse cache quebrado.
       - name: Restaurar estado incremental (cache)
         uses: actions/cache@v4
         with:
           path: |
             dados_itbi.json
             dados_meta.json
-          key: itbi-dados-${{ github.run_id }}
+          key: itbi-dados-v2-${{ github.run_id }}
           restore-keys: |
-            itbi-dados-
+            itbi-dados-v2-
 
       # --incluir-historico-antigo é seguro rodar sempre: só rebusca o
       # arquivo histórico se ele ainda não constar no estado restaurado do cache.
