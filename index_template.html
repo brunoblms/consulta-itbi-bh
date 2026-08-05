@@ -105,6 +105,7 @@
   }
   .status-atualizacao.erro { color: #b42318; }
   .status-atualizacao.sucesso { color: #067647; }
+  .tabela-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13.5px; }
   th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--cinza-borda); vertical-align: top; }
   th { color: var(--texto-sec); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.02em; }
@@ -122,6 +123,51 @@
     line-height: 1.5;
   }
   .resumo { font-size: 13px; color: var(--texto-sec); margin: 12px 2px 0 2px; }
+
+  /* Abaixo de 640px: a tabela de 6 colunas não cabe na tela sem estourar a
+     área branca, então cada linha vira um "cartão" empilhado (rótulo + valor)
+     em vez de colunas lado a lado. */
+  @media (max-width: 640px) {
+    header { padding: 22px 16px; }
+    main { padding: 0 12px; }
+    .card { padding: 16px; }
+
+    table, thead, tbody, tr, td { display: block; width: 100%; }
+    thead { display: none; }
+    tbody tr {
+      border: 1px solid var(--cinza-borda);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    tbody tr:last-child { margin-bottom: 0; }
+    tbody td {
+      border-bottom: none;
+      padding: 5px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    tbody td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: var(--texto-sec);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      flex-shrink: 0;
+    }
+    tbody td.valor { white-space: normal; text-align: right; }
+    tbody td.endereco {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      padding-bottom: 8px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--cinza-borda);
+    }
+  }
 </style>
 </head>
 <body>
@@ -242,16 +288,21 @@ function renderResultado(lista, termo) {
     return;
   }
   resumo.textContent = `${lista.length} transação(ões) encontrada(s), da mais recente para a mais antiga.`;
-  let html = '<table><thead><tr>' +
+  let html = '<div class="tabela-wrap"><table><thead><tr>' +
     '<th>Endereço completo</th><th>Data</th><th>Valor declarado</th><th>Valor base de cálculo</th>' +
     '<th>Ano de construção</th><th>Área construída</th>' +
     '</tr></thead><tbody>';
   for (const r of lista) {
-    html += `<tr><td>${r.endereco}</td><td>${r.data_exibicao}</td>` +
-      `<td class="valor">${formatarMoeda(r.valor_declarado)}</td><td class="valor">${formatarMoeda(r.valor_base_calculo)}</td>` +
-      `<td class="valor">${formatarAno(r.ano_construcao)}</td><td class="valor">${formatarArea(r.area_construida)}</td></tr>`;
+    html += `<tr>` +
+      `<td class="endereco" data-label="Endereço completo">${r.endereco}</td>` +
+      `<td data-label="Data">${r.data_exibicao}</td>` +
+      `<td class="valor" data-label="Valor declarado">${formatarMoeda(r.valor_declarado)}</td>` +
+      `<td class="valor" data-label="Valor base de cálculo">${formatarMoeda(r.valor_base_calculo)}</td>` +
+      `<td class="valor" data-label="Ano de construção">${formatarAno(r.ano_construcao)}</td>` +
+      `<td class="valor" data-label="Área construída">${formatarArea(r.area_construida)}</td>` +
+      `</tr>`;
   }
-  html += '</tbody></table>';
+  html += '</tbody></table></div>';
   container.innerHTML = html;
 }
 
