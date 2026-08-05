@@ -23,8 +23,11 @@
   header {
     background: linear-gradient(135deg, var(--azul-escuro), var(--azul));
     color: white;
-    padding: 28px 24px;
+    padding: 28px 0;
   }
+  /* mesma largura/máximo e mesmo padding horizontal do <main>, pra o título
+     ficar alinhado com a borda esquerda da tabela/cartões abaixo dele. */
+  .header-inner { max-width: 920px; margin: 0 auto; padding: 0 20px; }
   header h1 { margin: 0 0 6px 0; font-size: 22px; }
   header p { margin: 0; opacity: 0.9; font-size: 14px; }
   main { max-width: 920px; margin: -20px auto 40px auto; padding: 0 20px; }
@@ -91,7 +94,8 @@
      área branca, então cada linha vira um "cartão" empilhado (rótulo + valor)
      em vez de colunas lado a lado. */
   @media (max-width: 640px) {
-    header { padding: 22px 16px; }
+    header { padding: 22px 0; }
+    .header-inner { padding: 0 16px; }
     main { padding: 0 12px; }
     .card { padding: 16px; }
 
@@ -135,8 +139,10 @@
 </head>
 <body>
 <header>
+  <div class="header-inner">
   <h1>Consulta ITBI - Belo Horizonte</h1>
   <p>Últimas transações imobiliárias por endereço, com base nos dados abertos da PBH (ITBI Relatórios)</p>
+  </div>
 </header>
 <main>
   <div class="card">
