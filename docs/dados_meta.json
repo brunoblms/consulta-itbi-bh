@@ -1,7 +1,8 @@
 {
-  "gerado_em": "2026-09-14T11:17:48.266145",
-  "total_registros": 509942,
+  "gerado_em": "2026-09-21T11:29:36.875290",
+  "total_registros": 512524,
   "meses_incluidos": {
+    "2026-08": 2582,
     "2026-07": 2980,
     "2026-06": 2626,
     "2026-05": 2164,
@@ -30,7 +31,7 @@
     "2024-06": 0,
     "2008-01_a_2024-05_consolidado": 450590
   },
-  "data_mais_recente": "31/07/2026",
+  "data_mais_recente": "31/08/2026",
   "data_mais_antiga": "02/01/2008",
   "observacao": "Atualizado por etl_atualizar_dados.py (incremental) com limite de 5 anos."
 }
