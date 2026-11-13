@@ -210,7 +210,8 @@ def buscar_mes_via_csv(url_csv):
             'Endereco Completo': campos[idx_endereco],
             'Valor Declarado': campo(' Valor Declarado ', 'Valor Declarado'),
             'Valor Base Calculo': campo(' Valor Base Calculo ', 'Valor Base Calculo'),
-            'Data Quitacao': campos[idx.get('Data Quitacao', len(header) - 1)],
+            # junho/2024 chama a data de "Data Quitacao Transacao"
+            'Data Quitacao': campo('Data Quitacao', 'Data Quitacao Transacao', padrao=campos[len(header) - 1]),
             'Ano de Construcao (Unidade)': campo('Ano de Construcao (Unidade)', 'Ano de Construcao Unidade'),
             'Area Construida Adquirida': campo('Area Construida Adquirida'),
         })
@@ -224,10 +225,13 @@ def normalizar_registros(registros_brutos):
         endereco = (r.get('Endereco Completo') or r.get('Endereco') or '').strip()
         if not endereco:
             continue
-        data_iso, data_exib = parse_data(r.get('Data Quitacao', ''))
+        # os nomes das colunas variam entre remessas: em junho/2024 a data vem como
+        # "Data Quitacao Transacao" e o ano sem parenteses ("Ano de Construcao Unidade").
+        # Sem esses apelidos o mes inteiro era descartado aqui, calado.
+        data_iso, data_exib = parse_data(r.get('Data Quitacao') or r.get('Data Quitacao Transacao') or '')
         if not data_iso:
             continue
-        ano_construcao = (r.get('Ano de Construcao (Unidade)') or '').strip() or None
+        ano_construcao = (r.get('Ano de Construcao (Unidade)') or r.get('Ano de Construcao Unidade') or '').strip() or None
         out.append({
             'endereco': endereco,
             'endereco_normalizado': normalize_endereco(endereco),
@@ -271,7 +275,9 @@ def carregar_estado_existente():
         mes: qtd for mes, qtd in meses_ok.items()
         if mes in meses_presentes
         or (mes == '2008-01_a_2024-05_consolidado' and historico_presente)
-        or qtd == 0  # mes real sem nenhum registro no periodo e, por isso, legitimamente ausente
+        # mes gravado com 0 registros NAO conta como feito: foi assim que junho/2024
+        # (1.916 vendas na PBH) ficou zerado pra sempre. Rebuscar um mes vazio custa
+        # uma requisicao por execucao.
     }
     return registros_existentes, meses_ok
 
@@ -333,6 +339,12 @@ def atualizar(anos=5, incluir_historico_antigo=False, refazer_tudo=False, log=pr
             else:
                 brutos = buscar_mes_via_csv(r['url'])
             normalizados = normalizar_registros(brutos)
+            if brutos and not normalizados:
+                # a fonte tem linhas mas nenhuma sobreviveu: quase sempre e coluna renomeada.
+                colunas = ', '.join(k for k in brutos[0].keys() if k != '_id')
+                raise ValueError(f"{len(brutos)} linhas na fonte e 0 aproveitadas -- colunas: {colunas}")
+            if len(normalizados) < len(brutos):
+                log(f"  aviso: {len(brutos) - len(normalizados)} de {len(brutos)} linhas descartadas (sem endereco ou data)")
             todos_registros.extend(normalizados)
             meses_novos[mes] = len(normalizados)
             log(f"  OK ({len(normalizados)} registros)")

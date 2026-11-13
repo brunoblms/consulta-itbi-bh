@@ -238,6 +238,43 @@ function normalizar(s) {
   return t;
 }
 
+// A base da PBH escreve o tipo de logradouro e a unidade de um jeito fixo
+// (RUA, AVENIDA, PCA, ALA, TRV, APT...). Quem busca digita de varios jeitos
+// ("Av.", "Praca", "apto 301", "n 43", "Rua X, 43"). Cada palavra digitada
+// e traduzida pra grafia da base; pontuacao vira espaco.
+const SINONIMOS = {
+  'R': 'RUA', 'AV': 'AVENIDA', 'AVE': 'AVENIDA',
+  'PRACA': 'PCA', 'PC': 'PCA', 'PCA': 'PCA',
+  'ALAMEDA': 'ALA', 'AL': 'ALA',
+  'TRAVESSA': 'TRV', 'TRAV': 'TRV', 'TV': 'TRV',
+  'RODOVIA': 'ROD', 'BECO': 'BEC', 'ESTRADA': 'EST',
+  'APTO': 'APT', 'APARTAMENTO': 'APT', 'AP': 'APT',
+  'PROF': 'PROFESSOR', 'DR': 'DOUTOR', 'DES': 'DESEMBARGADOR',
+  'ENG': 'ENGENHEIRO', 'CEL': 'CORONEL', 'GEN': 'GENERAL', 'GAL': 'GENERAL',
+  'STA': 'SANTA', 'STO': 'SANTO', 'PE': 'PADRE', 'SEN': 'SENADOR', 'DEP': 'DEPUTADO',
+};
+// palavras que so atrapalham ("n 43", "numero 43")
+const DESCARTAR = new Set(['N', 'NO', 'NUMERO', 'NRO', 'NUM']);
+
+function tokensDaBusca(termo) {
+  const t = stripAccents(termo).toUpperCase()
+    .replace(/[º°ª]/g, ' ')
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .trim();
+  if (!t) return [];
+  return t.split(' ')
+    .filter(tok => !DESCARTAR.has(tok))
+    .map(tok => SINONIMOS[tok] || tok);
+}
+
+// Numero tem que casar inteiro: "43" nao pode achar "143" nem "430".
+function casaToken(endereco, tok) {
+  if (/^\d+$/.test(tok)) {
+    return new RegExp('(^|[^0-9])' + tok + '([^0-9]|$)').test(endereco);
+  }
+  return endereco.indexOf(tok) !== -1;
+}
+
 function formatarMoeda(v) {
   if (v === null || v === undefined) return '-';
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -265,14 +302,13 @@ function renderResumo() {
 }
 
 function buscar(termo, quantidade) {
-  const termoNorm = normalizar(termo);
-  const tokens = termoNorm.split(' ').filter(Boolean);
+  const tokens = tokensDaBusca(termo);
   if (tokens.length === 0) return [];
   const resultados = [];
   for (const r of DADOS) {
     let ok = true;
     for (const tok of tokens) {
-      if (r.endereco_normalizado.indexOf(tok) === -1) { ok = false; break; }
+      if (!casaToken(r.endereco_normalizado, tok)) { ok = false; break; }
     }
     if (ok) resultados.push(r);
     if (resultados.length >= quantidade * 20) break; // limite de segurança, dados já vêm ordenados por data desc
